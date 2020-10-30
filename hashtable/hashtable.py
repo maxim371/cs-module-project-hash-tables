@@ -21,7 +21,12 @@ class HashTable:
     """
 
     def __init__(self, capacity):
-        # Your code here
+        self.capacity = capacity
+        self.storage = [None] * capacity
+        self.initial_capacity = capacity
+        self.num_keys = 0
+        self.num_item = 0
+        
 
 
     def get_num_slots(self):
@@ -34,7 +39,7 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        return len(self.storage)
 
 
     def get_load_factor(self):
@@ -43,7 +48,11 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        return self.get_load_factor
+
+    def update_load_factor(self):
+        #how much space is consumed?
+        self.load_factor = self.num_item/self.capacity
 
 
     def fnv1(self, key):
@@ -53,7 +62,12 @@ class HashTable:
         Implement this, and/or DJB2.
         """
 
-        # Your code here
+        fnv = 2**40 + 2**8 + 0xb3
+        hash = 14695981039346656037
+        for x in key:
+            hash = hash * fnv
+            hash = hash ^ ord(x)
+        return hash & 0xFFFFFFFFFFFFFFFF
 
 
     def djb2(self, key):
@@ -62,7 +76,10 @@ class HashTable:
 
         Implement this, and/or FNV-1.
         """
-        # Your code here
+        hash = 5381
+        for x in key:
+            hash = ((hash << 5) + 5) + ord(x)
+        return hash & 0xFFFFFFFF
 
 
     def hash_index(self, key):
@@ -81,7 +98,43 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+
+
+        
+        hashed_key = self.hash_index(key)
+        link = HashTableEntry(key, value)
+
+        node = self.storage[hashed_key]
+        if node is None:
+            self.storage[hashed_key] = link
+            self.num_keys += 1
+            return
+
+        while node is not None and node.key != key:
+            prev = node
+            node = node.next
+
+        if node is None:
+            prev.next = link
+            self.num_keys += 1
+
+        else:
+            node.value = value
+
+   
+
+    def make_storage(self):
+        new_storage = [None] * self.capacity
+
+        for i in range(len(self.storage)):
+            node = self.storage[i]
+
+            while node is not None:
+                hashed_key = self.hash_index(node.key)
+                new_storage[hashed_key] = node
+                node = node.next
+        self.storage = new_storage
+
 
 
     def delete(self, key):
@@ -92,7 +145,32 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        #get hash_key
+        hashed_key = self.hash_index(key)
+
+        #get value stored at the hashed_key
+        node = self.storage[hashed_key]
+
+        if node.key == key:
+            self.storage[hashed_key] = node.next
+            self.num_keys -= 1
+            self.size_check()
+            return
+
+        #traverse linkedlist until key is found or end is reached
+
+        while node is not None and node.key != key:
+            prev = node
+            node = node.next
+
+        if node is None:
+            print(f'{key} was not found')
+            return None
+
+        #Remove linkedpair node from chain
+        prev.next = node.next
+        self.num_keys -= 1
+        self.size_check()
 
 
     def get(self, key):
@@ -103,7 +181,22 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        #compute hash
+        hashed_key = self.hash_index(key)
+
+        #get first node in linkedlist storage
+        node = self.storage[hashed_key]
+
+        #traverse linkedlist until key found/end reached
+        while node is not None and node.key != key:
+            node = node.next
+
+        if node is None:
+            return None
+        else:
+            return node.value
+
+
 
 
     def resize(self, new_capacity):
@@ -113,7 +206,25 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        #get storage as it currently exist
+        old_storage = self.storage
+
+        #if no capacity is given
+        if new_capacity is None:
+            #set capacity to double required size
+            new_capacity = len(self.storage) * 2
+
+        #re-create storage with new length
+        self.storage = [None] * new_capacity
+        #re-create capacity
+        self.capacity = new_capacity
+        #for each item in old storage
+        for node in old_storage:
+            while node is not None:
+                self.put(node.key, node.value)
+                self.num_item -= 1
+                node = node.next
+        self.update_load_factor()
 
 
 
